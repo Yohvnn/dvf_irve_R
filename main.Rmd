@@ -1,0 +1,157 @@
+---
+title: "Impact des Stations de Recharge sur les Prix de l'Immobilier Locaux"
+output: 
+  #pdf_document:
+    #toc: true
+  html_document:
+    toc: True
+    
+knit: (function(inputFile, encoding) {
+    rmarkdown::render(inputFile, encoding = encoding, output_dir = "reports/")
+  })
+author: "Yohann CHAN CHEW HONG"
+date: "`r Sys.Date()`"
+---
+
+## Environnement de travail
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+
+#library(vroom)
+# Il semblerait que vroom prennent plus d'espace dans la mémoire que la fonction read.csv 2.82gb pour charger les données vs 3.5gb pour vroom
+```
+
+```{r chargement des données}
+
+irve <- read.csv("/Users/cchon/OneDrive/Bureau/dvf_irve_impact/data/irve-statique-v-2.3.1-20240308.csv")
+
+dvf_maisons <- read.csv("/Users/cchon/OneDrive/Bureau/dvf_irve_impact/data/dvf_clean_maisons.csv")
+
+dvf_appartements <- read.csv("/Users/cchon/OneDrive/Bureau/dvf_irve_impact/data/dvf_clean_apparts.csv")
+
+```
+
+## IRVE
+
+```{r aperçu des données irve}
+glimpse(irve)
+```
+
+```{r nettoyage des données}
+irve <- select(irve, 
+                    -"nom_amenageur", 
+                    -"siren_amenageur", 
+                    -"contact_amenageur", 
+                    -"nom_operateur", 
+                    -"contact_operateur", 
+                    -"telephone_operateur",
+                    -"datagouv_dataset_id", 
+                    -"datagouv_resource_id",
+                    -"datagouv_organization_or_owner", 
+                    -"created_at", 
+                    -"last_modified")
+
+
+irve$observations
+irve <- select(irve,-"observations")
+irve <- select(irve, -"num_pdl")
+
+irve$date_mise_en_service <- as.Date(irve$date_mise_en_service, format = "%Y-%m-%d")
+
+irve$date_mise_en_service %>%
+  summary()
+
+irve$puissance_nominale %>%
+  summary()
+
+
+
+```
+
+```{r station de recharge en 2027???}
+irve %>%
+  filter(date_mise_en_service > "2027-01-01") %>%
+  count()
+
+irve %>%
+  filter(date_mise_en_service > "2027-01-01")
+
+irve
+```
+
+```{r puissance maximale conversion kw}
+
+irve$puissance_nominale_kW %>%
+  summary()
+
+irve <- irve %>%
+  mutate(puissance_nominale_kW = ifelse(puissance_nominale > 1000, puissance_nominale / 1000, puissance_nominale))
+
+glimpse(irve)
+
+irve <- select(irve, -"puissance_nominale")
+
+```
+```{r code departement missing}
+# retrouver les stations sans code_insee_commune
+irve$code_insee_commune <- as.numeric(irve$code_insee_commune)
+# precedemment des char
+
+irve %>% 
+  filter(is.na(code_insee_commune)) %>%
+  select(id_station_itinerance, adresse_station, code_insee_commune)
+# on est passé de 90 000 missing values à 11 000
+  
+irve$code_insee_commune <- str_extract(irve$adresse_station, "\\d{5}(?=[^\\d]*$)")
+# \\d{5} : Recherche une séquence de 5 chiffres.
+# (?=[^\\d]*$) : Utilise un "lookahead" positif pour s'assurer que la séquence de 5 chiffres est suivie uniquement de caractères non numériques ([^\\d]*) jusqu'à la fin de la chaîne ($)
+
+irve$code_insee_commune
+glimpse(irve)
+
+irve %>% select(code_insee_commune, consolidated_code_postal)
+
+irve <- select(irve, -"consolidated_code_postal")
+
+
+
+```
+
+```{r code postal missing}
+
+```
+
+```{r code postal missing}
+
+```
+
+```{r summary}
+summary(irve)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+## DVF
+
+```{r aperçu des données dvf_maisons}
+glimpse(dvf_maisons)
+```
+```{r aperçu des données dvf_appartements}
+glimpse(dvf_appartements)
+```
+
+```{r nettoyage des données}
+```
